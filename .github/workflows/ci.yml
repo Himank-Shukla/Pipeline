@@ -5,12 +5,12 @@ on:
     paths:
       - 'dev/**'
       - 'stg/**'
-      - 'prod/**'
+      - 'main/**'
   pull_request:
     paths:
       - 'dev/**'
       - 'stg/**'
-      - 'prod/**'
+      - 'main/**'
 
 jobs:
   build:
