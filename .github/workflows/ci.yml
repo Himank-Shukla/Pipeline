@@ -1,0 +1,48 @@
+name: Keystore Generation
+
+on:
+  push:
+    paths:
+      - 'dev/**'
+      - 'stg/**'
+      - 'main/**'
+  pull_request:
+    paths:
+      - 'dev/**'
+      - 'stg/**'
+      - 'main/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Generate or Update Keystore
+        run: |
+          ENV_FOLDER=${{ github.event_name == 'pull_request' && 'pull_request' || github.ref_name }}
+          KEYSTORE_PATH="${{ github.workspace }}/keystore-${ENV_FOLDER}.jks"
+          PASSWORD="your_keystore_password"
+
+          echo "Generating keystore for environment: $ENV_FOLDER"
+          if [ -f "$KEYSTORE_PATH" ]; then
+            echo "Updating existing keystore..."
+          else
+            echo "Creating a new keystore..."
+            keytool -genkey -alias temp -keystore "$KEYSTORE_PATH" -storepass "$PASSWORD" -keypass "$PASSWORD" -dname "CN=temp" -keyalg RSA -keysize 2048
+            keytool -delete -alias temp -keystore "$KEYSTORE_PATH" -storepass "$PASSWORD"
+          fi
+
+          for CERT in ${ENV_FOLDER}/*.pem; do
+            ALIAS=$(basename "$CERT" .pem)
+            echo "Adding certificate $CERT to keystore..."
+            keytool -import -trustcacerts -file "$CERT" -alias "$ALIAS" -keystore "$KEYSTORE_PATH" -storepass "$PASSWORD" -noprompt
+          done
+
+      - name: Upload Keystore Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: keystore-${ENV_FOLDER}
+          path: keystore-${ENV_FOLDER}.jks
