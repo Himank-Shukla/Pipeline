@@ -1,0 +1,26 @@
+name: Mock S3 Push
+
+on:
+  workflow_run:
+    workflows: ["Keystore Generation"]
+    types:
+      - completed
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Download Keystore Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: keystore-${{ github.ref_name }}
+
+      - name: Mock S3 Push
+        run: |
+          MOCK_S3_PATH="${{ github.workspace }}/mock_s3/keystore-${{ github.ref_name }}.jks"
+          echo "Simulating S3 push by copying keystore to mock S3 location."
+          mkdir -p "${{ github.workspace }}/mock_s3"
+          cp keystore-${{ github.ref_name }}.jks "$MOCK_S3_PATH"
+          echo "Keystore saved to $MOCK_S3_PATH for testing."
