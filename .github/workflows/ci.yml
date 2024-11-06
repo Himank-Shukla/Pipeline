@@ -35,8 +35,8 @@ jobs:
             keytool -delete -alias temp -keystore "$KEYSTORE_PATH" -storepass "$PASSWORD"
           fi
 
-          for CERT in ${ENV_FOLDER}/*.{cer, CER, crt, der); do
-            ALIAS=$(basename "$CERT" .{cer, CER, crt, der))
+          for CERT in ${ENV_FOLDER}/*.{cer, CER, crt, der}; do
+            ALIAS=$(basename "$CERT" .{cer, CER, crt, der})
             echo "Adding certificate $CERT to keystore..."
             keytool -import -trustcacerts -file "$CERT" -alias "$ALIAS" -keystore "$KEYSTORE_PATH" -storepass "$PASSWORD" -noprompt
           done
