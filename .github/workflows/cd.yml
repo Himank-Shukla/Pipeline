@@ -1,37 +1,37 @@
-name: Mock S3 Push and Artifact Upload
+# name: Mock S3 Push and Artifact Upload
 
-on:
-  workflow_run:
-    workflows: ["Keystore Generation"]
-    types:
-      - completed
+# on:
+#   workflow_run:
+#     workflows: ["Keystore Generation"]
+#     types:
+#       - completed
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
+#     if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
-    steps:
-      - name: Download Keystore Artifact from Previous Workflow
-        uses: actions/download-artifact@v3
-        with:
-          name: trusted-tpm.jks
-          path: ./
+#     steps:
+#       - name: Download Keystore Artifact from Previous Workflow
+#         uses: actions/download-artifact@v3
+#         with:
+#           name: trusted-tpm.jks
+#           path: ./
 
-      - name: Mock S3 Push
-        run: |
-          echo "Simulating S3 push with downloaded keystore file."
-          # Here you would have your S3 push logic if testing with a real S3 bucket.
+#       - name: Mock S3 Push
+#         run: |
+#           echo "Simulating S3 push with downloaded keystore file."
+#           # Here you would have your S3 push logic if testing with a real S3 bucket.
 
-      - name: Upload Keystore as Artifact for Local Download
-        uses: actions/upload-artifact@v3
-        with:
-          name: trusted-tpm.jks
-          path: trusted-tpm.jks
+#       - name: Upload Keystore as Artifact for Local Download
+#         uses: actions/upload-artifact@v3
+#         with:
+#           name: trusted-tpm.jks
+#           path: trusted-tpm.jks
 
-      - name: Clean Up Keystore File
-        if: ${{ success() }}
-        run: |
-          echo "Cleaning up keystore file..."
-          rm -f trusted-tpm.jks
-          echo "Keystore file removed successfully."
+#       - name: Clean Up Keystore File
+#         if: ${{ success() }}
+#         run: |
+#           echo "Cleaning up keystore file..."
+#           rm -f trusted-tpm.jks
+#           echo "Keystore file removed successfully."
