@@ -45,19 +45,19 @@ jobs:
           STOREPASS="changeit"
 
           echo "Importing certificates from TrustedTpm into the keystore..."
-          for file in trustedTpm/unzip/*/*/*.{cer,CER,crt,der}; do
-              if [[ -f "$file" ]]; then
-                  ALIAS=$(basename "$file")
+          # for file in trustedTpm/unzip/*/*/*.{cer,CER,crt,der}; do
+          #     if [[ -f "$file" ]]; then
+          #         ALIAS=$(basename "$file")
                   
-                  # Check if alias already exists in keystore
-                  if keytool -list -keystore "$KEYSTORE" -storepass "$STOREPASS" -alias "$file" >/dev/null 2>&1; then
-                      echo "Alias $ALIAS already exists, skipping import for $file."
-                  else
-                      echo "Importing $file as alias $ALIAS..."
-                      keytool -import -file "$file" -alias "$file" -keystore "$KEYSTORE" -storepass "$STOREPASS" -storetype jks -noprompt
-                  fi
-              fi
-          done
+          #         # Check if alias already exists in keystore
+          #         if keytool -list -keystore "$KEYSTORE" -storepass "$STOREPASS" -alias "$file" >/dev/null 2>&1; then
+          #             echo "Alias $ALIAS already exists, skipping import for $file."
+          #         else
+          #             echo "Importing $file as alias $ALIAS..."
+          #             keytool -import -file "$file" -alias "$file" -keystore "$KEYSTORE" -storepass "$STOREPASS" -storetype jks -noprompt
+          #         fi
+          #     fi
+          # done
 
           # Import certificates from dev, stg, and prod folders
           for ENV in dev stg prod; do
