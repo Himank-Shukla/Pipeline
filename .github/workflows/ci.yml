@@ -24,7 +24,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cabextract default-jre-headless
-
       - name: Generate Initial Keystore
         run: |
           # Create directories
@@ -49,8 +48,14 @@ jobs:
           for file in trustedTpm/unzip/*/*/*.{cer,CER,crt,der}; do
               if [[ -f "$file" ]]; then
                   ALIAS=$(basename "$file")
-                  echo "Importing $file as alias $ALIAS..."
-                  keytool -import -file "$file" -alias "$ALIAS" -keystore "$KEYSTORE" -storepass "$STOREPASS" -storetype jks -noprompt
+                  
+                  # Check if alias already exists in keystore
+                  if keytool -list -keystore "$KEYSTORE" -storepass "$STOREPASS" -alias "$file" >/dev/null 2>&1; then
+                      echo "Alias $ALIAS already exists, skipping import for $file."
+                  else
+                      echo "Importing $file as alias $ALIAS..."
+                      keytool -import -file "$file" -alias "$file" -keystore "$KEYSTORE" -storepass "$STOREPASS" -storetype jks -noprompt
+                  fi
               fi
           done
 
@@ -60,8 +65,14 @@ jobs:
               for file in $ENV/*.{cer,CER,crt,der}; do
                   if [[ -f "$file" ]]; then
                       ALIAS="${ENV}-$(basename "$file")"
-                      echo "Importing $file as alias $ALIAS..."
-                      keytool -import -file "$file" -alias "$ALIAS" -keystore "$KEYSTORE" -storepass "$STOREPASS" -storetype jks -noprompt
+                      
+                      # Check if alias already exists in keystore
+                      if keytool -list -keystore "$KEYSTORE" -storepass "$STOREPASS" -alias "$file" >/dev/null 2>&1; then
+                          echo "Alias $ALIAS already exists, skipping import for $file."
+                      else
+                          echo "Importing $file as alias $ALIAS..."
+                          keytool -import -file "$file" -alias "$file" -keystore "$KEYSTORE" -storepass "$STOREPASS" -storetype jks -noprompt
+                      fi
                   fi
               done
           done
