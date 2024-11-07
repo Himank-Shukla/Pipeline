@@ -1,4 +1,4 @@
-name: Mock S3 Push
+name: Mock S3 Push and Artifact Upload
 
 on:
   workflow_run:
@@ -12,15 +12,26 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
-      - name: Download Keystore Artifact
+      - name: Download Keystore Artifact from Previous Workflow
         uses: actions/download-artifact@v3
         with:
-          name: keystore-${{ github.ref_name }}
+          name: trusted-tpm.jks
+          path: ./
 
       - name: Mock S3 Push
         run: |
-          MOCK_S3_PATH="${{ github.workspace }}/mock_s3/keystore-${{ github.ref_name }}.jks"
-          echo "Simulating S3 push by copying keystore to mock S3 location."
-          mkdir -p "${{ github.workspace }}/mock_s3"
-          cp keystore-${{ github.ref_name }}.jks "$MOCK_S3_PATH"
-          echo "Keystore saved to $MOCK_S3_PATH for testing."
+          echo "Simulating S3 push with downloaded keystore file."
+          # Here you would have your S3 push logic if testing with a real S3 bucket.
+
+      - name: Upload Keystore as Artifact for Local Download
+        uses: actions/upload-artifact@v3
+        with:
+          name: trusted-tpm.jks
+          path: trusted-tpm.jks
+
+      - name: Clean Up Keystore File
+        if: ${{ success() }}
+        run: |
+          echo "Cleaning up keystore file..."
+          rm -f trusted-tpm.jks
+          echo "Keystore file removed successfully."
