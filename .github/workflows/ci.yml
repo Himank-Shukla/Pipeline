@@ -5,12 +5,12 @@ on:
     paths:
       - 'dev/**'
       - 'stg/**'
-      - 'main/**'
+      - 'prod/**'
   pull_request:
     paths:
       - 'dev/**'
       - 'stg/**'
-      - 'main/**'
+      - 'prod/**'
 
 jobs:
   build:
@@ -20,29 +20,42 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Generate or Update Keystore
+      - name: Install Dependencies
         run: |
-          ENV_FOLDER=${{ github.event_name == 'pull_request' && 'pull_request' || github.ref_name }}
-          KEYSTORE_PATH="${{ github.workspace }}/keystore-${ENV_FOLDER}.jks"
-          PASSWORD="your_keystore_password"
+          sudo apt-get update
+          sudo apt-get install -y cabextract default-jre-headless
 
-          echo "Generating keystore for environment: $ENV_FOLDER"
-          if [ -f "$KEYSTORE_PATH" ]; then
-            echo "Updating existing keystore..."
-          else
-            echo "Creating a new keystore..."
-            keytool -genkey -alias temp -keystore "$KEYSTORE_PATH" -storepass "$PASSWORD" -keypass "$PASSWORD" -dname "CN=temp" -keyalg RSA -keysize 2048
-            keytool -delete -alias temp -keystore "$KEYSTORE_PATH" -storepass "$PASSWORD"
-          fi
+      - name: Generate Initial Keystore
+        run: |
+          # Create directories
+          mkdir -p trustedTpm/unzip
 
-          for CERT in ${ENV_FOLDER}/*.{cer, CER, crt, der}; do
-            ALIAS=$(basename "$CERT" .{cer, CER, crt, der})
-            echo "Adding certificate $CERT to keystore..."
-            keytool -import -trustcacerts -file "$CERT" -alias "$ALIAS" -keystore "$KEYSTORE_PATH" -storepass "$PASSWORD" -noprompt
+          # Download TrustedTpm.cab
+          echo "Downloading TrustedTpm.cab..."
+          curl -L --output trustedTpm/TrustedTpm.cab "https://go.microsoft.com/fwlink/?linkid=2097925"
+
+          # Test and extract TrustedTpm.cab
+          echo "Testing the integrity of the CAB file..."
+          cabextract -q --test trustedTpm/TrustedTpm.cab
+          
+          echo "Extracting TrustedTpm.cab..."
+          cabextract -q trustedTpm/TrustedTpm.cab --directory trustedTpm/unzip/
+
+          # Initialize or update the keystore with certificates from extracted files
+          KEYSTORE="trusted-tpm.jks"
+          STOREPASS="changeit"
+
+          echo "Importing certificates into the keystore..."
+          for file in trustedTpm/unzip/*/*/*.{cer,CER,crt,der}; do
+              if [[ -f "$file" ]]; then
+                  ALIAS=$(basename "$file")
+                  echo "Importing $file as alias $ALIAS..."
+                  keytool -import -file "$file" -alias "$ALIAS" -keystore "$KEYSTORE" -storepass "$STOREPASS" -storetype jks -noprompt
+              fi
           done
 
-      - name: Upload Keystore Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: keystore-${ENV_FOLDER}
-          path: keystore-${ENV_FOLDER}.jks
+          # Count certificates in the keystore
+          echo "Counting certificates in the keystore..."
+          CERT_COUNT=$(keytool -list -keystore "$KEYSTORE" -storepass "$STOREPASS" | grep 'trustedCertEntry' | wc -l)
+
+          echo "Number of certificates in the keystore: $CERT_COUNT"
